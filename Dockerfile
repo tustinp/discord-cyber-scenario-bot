@@ -12,10 +12,16 @@ WORKDIR /
 
 COPY requirements.txt .
 
-# Update packages and install required system dependencies
-RUN apt-get update && \
-    apt-get -y full-upgrade --no-install-recommends && \
-    apt-get install -y --no-install-recommends locales python3-setuptools python3-dev python3-pip && \
+# Configure apt to retry transient network failures
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
+
+# Update packages and install required system dependencies (with retry on transient failures)
+RUN for i in 1 2 3; do \
+      apt-get update && \
+      apt-get -y full-upgrade --no-install-recommends && \
+      apt-get install -y --no-install-recommends locales python3-setuptools python3-dev python3-pip && \
+      break || (echo "apt attempt $i failed, retrying..." && sleep 10); \
+    done && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
