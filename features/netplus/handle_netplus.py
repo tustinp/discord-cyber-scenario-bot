@@ -2,6 +2,21 @@ import random
 
 from .netplusdict import netplusdict
 
+# --- PATCH: shuffle every question's answer options ONCE at import time ---
+# (previously the correct answer was "a" for 82% of questions; this fixes
+# that bias without re-shuffling on every call, which caused a race condition
+# where an already-posted question could get its answer key changed underneath it)
+for _q in netplusdict:
+    _old_correct_text = _q["answers"][_q["correctanswer"]]
+    _keys = list(_q["answers"].keys())
+    _values = list(_q["answers"].values())
+    random.shuffle(_values)
+    _q["answers"] = dict(zip(_keys, _values))
+    _q["correctanswer"] = next(
+        k for k, v in _q["answers"].items() if v == _old_correct_text
+    )
+# --- END PATCH ---
+
 def handle_netplus(user_responses):
     # Create a list of question IDs, weighted based on user responses
     weighted_question_ids = []
@@ -32,19 +47,6 @@ def handle_netplus(user_responses):
 
     # Retrieve the selected question
     question = netplusdict[int(question_id.split('_')[1])]
-
-    # --- PATCH: shuffle the answer options so the correct one isn't always "a" ---
-    old_correct_text = question["answers"][question["correctanswer"]]
-    keys = list(question["answers"].keys())
-    values = list(question["answers"].values())
-    random.shuffle(values)
-    question["answers"] = dict(zip(keys, values))
-    # find which key the correct text landed on after shuffling
-    question["correctanswer"] = next(
-        k for k, v in question["answers"].items() if v == old_correct_text
-    )
-    # --- END PATCH ---
-
     prompt = question["question"]
     answers = question["answers"]
     correct_answer = question["correctanswer"]
