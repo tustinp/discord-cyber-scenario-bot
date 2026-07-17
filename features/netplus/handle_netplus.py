@@ -1,3 +1,4 @@
+cat /home/claude/discord-cyber-scenario-bot/features/netplus/handle_netplus_patched.py
 import random
 
 from .netplusdict import netplusdict
