@@ -1,4 +1,3 @@
-cat /home/claude/discord-cyber-scenario-bot/features/netplus/handle_netplus_patched.py
 import random
 
 from .netplusdict import netplusdict
@@ -33,6 +32,19 @@ def handle_netplus(user_responses):
 
     # Retrieve the selected question
     question = netplusdict[int(question_id.split('_')[1])]
+
+    # --- PATCH: shuffle the answer options so the correct one isn't always "a" ---
+    old_correct_text = question["answers"][question["correctanswer"]]
+    keys = list(question["answers"].keys())
+    values = list(question["answers"].values())
+    random.shuffle(values)
+    question["answers"] = dict(zip(keys, values))
+    # find which key the correct text landed on after shuffling
+    question["correctanswer"] = next(
+        k for k, v in question["answers"].items() if v == old_correct_text
+    )
+    # --- END PATCH ---
+
     prompt = question["question"]
     answers = question["answers"]
     correct_answer = question["correctanswer"]
